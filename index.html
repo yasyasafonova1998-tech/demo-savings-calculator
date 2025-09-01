@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ecomar – Simple Savings Calculator (Prototype)</title>
+  <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="brand-header">
+    <div class="header-left">
+      <img src="logo.png" alt="Ecomar Logo" class="logo">
+    </div>
+    <div class="header-right">
+      <a href="https://www.ecomarpropulsion.com/" target="_blank" rel="noopener" class="official-link">
+        Official website Ecomar
+      </a>
+      <div class="minor">Prototype · For dissertation demo</div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <h1>Ecomar – Simple Savings & ROI Calculator</h1>
+
+    <div class="intro-row">
+      <p class="lead">Enter your fleet details to estimate annual cost savings, CO₂ reduction and ROI.</p>
+      <a
+        class="btn sm cta"
+        href="https://calendar.app.google/2GUi8hxxV37zDEtt8"
+        target="_blank"
+        rel="noopener"
+      >
+        Schedule your initial consultation
+      </a>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: INPUTS -->
+      <div class="card">
+        <h2>Inputs</h2>
+
+        <label for="dieselLph">Fuel consumption at typical operation (litres/hour)</label>
+        <input id="dieselLph" type="number" min="0" step="0.1" value="12">
+
+        <label for="hours">Operating hours / vessel / year</label>
+        <input id="hours" type="number" min="0" step="1" value="1200">
+
+        <label for="dieselPrice">Diesel price (£/litre)</label>
+        <input id="dieselPrice" type="number" min="0" step="0.01" value="1.45">
+
+        <label for="elecPrice">Electricity price (£/kWh)</label>
+        <input id="elecPrice" type="number" min="0" step="0.01" value="0.22">
+
+        <label for="maintDelta">Maintenance delta (diesel − Kairos) £/vessel/year</label>
+        <input id="maintDelta" type="number" step="1" value="800">
+
+        <label for="fleet">Fleet size (vessels)</label>
+        <input id="fleet" type="number" min="1" step="1" value="3">
+
+        <details>
+          <summary>Advanced assumptions (optional)</summary>
+          <div class="hr"></div>
+
+          <div class="split">
+            <div>
+              <label for="dieselEnergy">Diesel energy content (kWh/litre)</label>
+              <input id="dieselEnergy" type="number" min="1" step="0.1" value="9.7">
+            </div>
+            <div>
+              <label for="chargeEff">Charging efficiency / round-trip (%)</label>
+              <input id="chargeEff" type="number" min="1" max="100" step="1" value="92">
+            </div>
+          </div>
+
+          <div class="split">
+            <div>
+              <label for="dieselEff">Diesel drivetrain efficiency (%)</label>
+              <input id="dieselEff" type="number" min="1" max="100" step="1" value="30">
+            </div>
+            <div>
+              <label for="co2Elec">Electricity CO₂ factor (kg CO₂e / kWh)</label>
+              <input id="co2Elec" type="number" min="0" step="0.001" value="0.00">
+            </div>
+          </div>
+
+          <div class="split">
+            <div>
+              <label for="co2Diesel">Diesel CO₂ factor (kg CO₂e / litre)</label>
+              <input id="co2Diesel" type="number" min="0" step="0.01" value="2.68">
+            </div>
+            <div>
+              <label for="capexPremium">Capex premium vs diesel (£/vessel)</label>
+              <input id="capexPremium" type="number" step="100" value="45000">
+            </div>
+          </div>
+
+          <div class="split">
+            <div>
+              <label for="grant">Grant / subsidy (£/vessel)</label>
+              <input id="grant" type="number" step="100" value="5000">
+            </div>
+            <div>
+              <label for="hpHelper">Don’t know l/h? Estimate from engine HP</label>
+              <div class="row">
+                <input id="hpHelper" type="number" min="1" step="1" placeholder="Enter HP (e.g., 200)">
+                <button type="button" class="btn sm" id="applyHp">Estimate</button>
+              </div>
+              <p class="foot">Prefills litres/hour from a simple proxy; edit if you know the exact value.</p>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- RIGHT: OUTPUTS -->
+      <div class="card">
+        <h2>Outputs</h2>
+
+        <div class="pill">
+          <h3>Annual operating cost — Diesel</h3>
+          <p id="costDieselFleet">£–</p>
+          <div class="muted" id="costDieselVessel">per vessel: £–</div>
+        </div>
+
+        <div class="pill">
+          <h3>Annual operating cost — Kairos</h3>
+          <p id="costElecFleet">£–</p>
+          <div class="muted" id="costElecVessel">per vessel: £–</div>
+        </div>
+
+        <div class="pill">
+          <h3>Annual savings</h3>
+          <p id="savingFleet">£– (<span id="savingPct">–%</span>)</p>
+          <div class="muted" id="savingVessel">per vessel: £–</div>
+        </div>
+
+        <div class="pill">
+          <h3>CO₂ avoided (fleet)</h3>
+          <p id="co2AvoidedFleet">– t</p>
+          <div class="muted" id="co2AvoidedVessel">per vessel: – t</div>
+        </div>
+
+        <div class="pill">
+          <h3>ROI timeframe (per vessel)</h3>
+          <p id="roiYears">– years</p>
+          <div class="muted">Simple payback: (capex premium − grant) ÷ annual saving</div>
+        </div>
+
+        <details>
+          <summary>Assumptions & references</summary>
+          <div class="hr"></div>
+          <p class="foot">
+            Defaults: diesel energy 9.7 kWh/L; diesel efficiency 30%; electric drivetrain 85% (fixed);
+            charging/round-trip 92%; CO₂ factors: diesel 2.68 kg/L, electricity 0.00 kg/kWh (renewable).
+          </p>
+          <p class="foot">
+            Sources: Proteus Energy (2024); Artemis Technologies (2025);
+            Sustainable Ships (2025); Ship & Bunker (2025);
+            Lozano et&nbsp;al. (2022); UMAS (2023); Gates (2023).
+          </p>
+        </details>
+
+        <p class="foot">Figures are indicative; depend on duty, tariffs, charging strategy, routes and load profile.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    // Inputs
+    const el = {
+      dieselLph:    $('dieselLph'),
+      hours:        $('hours'),
+      dieselPrice:  $('dieselPrice'),
+      elecPrice:    $('elecPrice'),
+      maintDelta:   $('maintDelta'),
+      fleet:        $('fleet'),
+      dieselEnergy: $('dieselEnergy'),
+      chargeEff:    $('chargeEff'),
+      dieselEff:    $('dieselEff'),
+      co2Elec:      $('co2Elec'),
+      co2Diesel:    $('co2Diesel'),
+      capexPremium: $('capexPremium'),
+      grant:        $('grant'),
+      hpHelper:     $('hpHelper'),
+      applyHp:      $('applyHp')
+    };
+
+    // Outputs
+    const out = {
+      costDieselFleet:  $('costDieselFleet'),
+      costDieselVessel: $('costDieselVessel'),
+      costElecFleet:    $('costElecFleet'),
+      costElecVessel:   $('costElecVessel'),
+      savingFleet:      $('savingFleet'),
+      savingVessel:     $('savingVessel'),
+      savingPct:        $('savingPct'),
+      co2AvoidedFleet:  $('co2AvoidedFleet'),
+      co2AvoidedVessel: $('co2AvoidedVessel'),
+      roiYears:         $('roiYears')
+    };
+
+    const N   = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+    const GBP = n => n.toLocaleString(undefined,{style:'currency',currency:'GBP',maximumFractionDigits:0});
+    const T   = n => n.toLocaleString(undefined,{maximumFractionDigits:2});
+
+    function calc(){
+      const dieselLph    = N(el.dieselLph.value);
+      const hours        = N(el.hours.value);
+      const dieselPrice  = N(el.dieselPrice.value);
+      const elecPrice    = N(el.elecPrice.value);
+      const maintDelta   = N(el.maintDelta.value);
+      const fleet        = Math.max(1, Math.floor(N(el.fleet.value)));
+
+      // Reference-aligned defaults (editable via Advanced)
+      const dieselEnergy = N(el.dieselEnergy.value);                          // kWh per litre (Proteus/Lozano)
+      const chargeEff    = Math.min(100, Math.max(1, N(el.chargeEff.value))) / 100; // 0–1 (Artemis/DNV typical)
+      const dieselEff    = Math.min(100, Math.max(1, N(el.dieselEff.value))) / 100; // 0–1 (Lozano/Sustainable Ships)
+      const kairosEff    = 0.85;                                              // fixed 85% (Artemis/UMAS typical)
+
+      const co2Elec      = N(el.co2Elec.value);                               // kg/kWh (0 if renewable)
+      const co2Diesel    = N(el.co2Diesel.value);                              // kg/L (IMO/EU)
+      const capexNet     = Math.max(0, N(el.capexPremium.value) - N(el.grant.value));
+
+      // Diesel operating cost (per vessel)
+      const dieselCostV = hours * dieselLph * dieselPrice;
+
+      // Propulsive demand implied by diesel burn (kWh/h)
+      const prop_kWh_h = dieselLph * dieselEnergy * dieselEff;
+
+      // Electric input energy to match propulsive demand (includes charging losses)
+      const kairos_kWh_h = prop_kWh_h / (kairosEff * chargeEff);
+
+      // Electric operating cost (per vessel)
+      const elecCostV = hours * kairos_kWh_h * elecPrice;
+
+      // Savings
+      const savingV  = dieselCostV - elecCostV + maintDelta;
+      const savingPct = dieselCostV > 0 ? (savingV / dieselCostV) * 100 : NaN;
+
+      // Emissions (t/year)
+      const co2DieselV_t = (hours * dieselLph * co2Diesel) / 1000;
+      const co2ElecV_t   = (hours * kairos_kWh_h * co2Elec) / 1000;
+      const co2AvoidedV_t = Math.max(0, co2DieselV_t - co2ElecV_t);
+
+      // Fleet totals
+      const dieselFleet = dieselCostV * fleet;
+      const elecFleet   = elecCostV * fleet;
+      const savingFleet = savingV * fleet;
+      const co2AvoidedF = co2AvoidedV_t * fleet;
+
+      // Payback (per vessel)
+      const roi = savingV > 0 ? (capexNet / savingV) : NaN;
+
+      // Outputs
+      out.costDieselFleet.textContent  = GBP(dieselFleet);
+      out.costDieselVessel.textContent = GBP(dieselCostV) + " per vessel";
+      out.costElecFleet.textContent    = GBP(elecFleet);
+      out.costElecVessel.textContent   = GBP(elecCostV) + " per vessel";
+      out.savingFleet.textContent      = GBP(savingFleet) + " (" + (Number.isFinite(savingPct) ? savingPct.toFixed(1) : "–") + "%)";
+      out.savingVessel.textContent     = GBP(savingV) + " per vessel";
+      out.co2AvoidedFleet.textContent  = T(co2AvoidedF) + " t";
+      out.co2AvoidedVessel.textContent = "per vessel: " + T(co2AvoidedV_t) + " t";
+      out.roiYears.textContent         = Number.isFinite(roi) ? roi.toFixed(1) + " years" : "–";
+    }
+
+    // Bind inputs
+    [
+      'dieselLph','hours','dieselPrice','elecPrice','maintDelta','fleet',
+      'dieselEnergy','chargeEff','dieselEff','co2Elec','co2Diesel',
+      'capexPremium','grant'
+    ].forEach(id => { const n = $(id); if (n) n.addEventListener('input', calc); });
+
+    // Optional HP→l/h estimator (rough proxy; user can overwrite)
+    function estimateFromHP(){
+      const hp = Number.parseFloat(el.hpHelper && el.hpHelper.value);
+      if (!Number.isFinite(hp) || hp <= 0) return;
+      const estLph = hp * 0.06;   // simple proxy curve; adjust if you have duty-cycle data
+      el.dieselLph.value = estLph.toFixed(1);
+      calc();
+    }
+    if (el.applyHp) el.applyHp.addEventListener('click', estimateFromHP);
+
+    document.addEventListener('DOMContentLoaded', calc);
+  </script>
+</body>
+</html>
